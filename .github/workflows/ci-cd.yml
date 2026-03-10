@@ -41,6 +41,8 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
+    environment:
+      name: dev
     steps:
       - name: Deploy to Dev Server
         run: |
@@ -56,4 +58,27 @@ jobs:
           docker rm frontend || true &&
           docker run -d --name frontend -p 3000:80 \
             -e REACT_APP_API_URL=http://localhost:3002 \
-            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}"
+            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}" 
+
+  deploy-prod:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+    steps:
+      - name: Deploy to Prod Server
+        run: |
+          ssh user@prod-server "
+          docker pull ghcr.io/${{ github.repository }}/backend:${{ github.sha }} &&
+          docker pull ghcr.io/${{ github.repository }}/frontend:${{ github.sha }} &&
+          docker stop backend || true &&
+          docker rm backend || true &&
+          docker run -d --name backend -p 3002:3000 \
+            -e MONGO_URI=mongodb://root:example@mongo:27017/proddb \
+            ghcr.io/${{ github.repository }}/backend:${{ github.sha }} &&
+          docker stop frontend || true &&
+          docker rm frontend || true &&
+          docker run -d --name frontend -p 3000:80 \
+            -e REACT_APP_API_URL=http://localhost:3002 \
+            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}" 
