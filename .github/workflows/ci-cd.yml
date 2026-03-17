@@ -45,11 +45,11 @@ jobs:
             ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
 
   # ====================
-  # 2. Deploy to Dev (automatic for develop)
+  # 2. Deploy to Dev (inside Actions runner)
   # ====================
   deploy-dev:
     needs: build
-    if: github.ref_name == 'develop'
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     environment:
       name: dev
@@ -86,21 +86,15 @@ jobs:
           curl -f http://localhost:3002/api/users || echo "Backend not ready"
 
   # ====================
-  # 3. Deploy to Prod (manual approval for main)
+  # 3. Deploy to Prod (inside Actions runner)
   # ====================
   deploy-prod:
     needs: build
-    if: github.ref_name == 'main'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: prod
-      url: http://example.com
     steps:
-      - name: Wait for manual approval
-        uses: hmarr/auto-approve-action@v2
-        with:
-          message: "Manual approval required before deploying to Prod"
-
       - name: Checkout
         uses: actions/checkout@v3
 
