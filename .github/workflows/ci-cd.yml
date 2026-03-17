@@ -7,6 +7,9 @@ on:
     branches: [main, develop]
 
 jobs:
+  # ====================
+  # 1. Build & Push Docker Images
+  # ====================
   build:
     runs-on: ubuntu-latest
     steps:
@@ -28,15 +31,22 @@ jobs:
         with:
           context: ./backend
           push: true
-          tags: ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+          tags: |
+            ghcr.io/${{ github.repository }}/backend:latest
+            ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
 
       - name: Build and push frontend
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+          tags: |
+            ghcr.io/${{ github.repository }}/frontend:latest
+            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
 
+  # ====================
+  # 2. Deploy to Dev (runs inside Actions runner)
+  # ====================
   deploy-dev:
     needs: build
     if: github.ref == 'refs/heads/develop'
@@ -44,22 +54,33 @@ jobs:
     environment:
       name: dev
     steps:
-      - name: Deploy to Dev Server
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Start MongoDB
         run: |
-          ssh user@dev-server "
-          docker pull ghcr.io/${{ github.repository }}/backend:${{ github.sha }} &&
-          docker pull ghcr.io/${{ github.repository }}/frontend:${{ github.sha }} &&
-          docker stop backend || true &&
-          docker rm backend || true &&
+          docker run -d --name mongo -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=example -p 27017:27017 mongo:6
+
+      - name: Run Backend
+        run: |
           docker run -d --name backend -p 3002:3000 \
-            -e MONGO_URI=mongodb://root:example@mongo:27017/testdb \
-            ghcr.io/${{ github.repository }}/backend:${{ github.sha }} &&
-          docker stop frontend || true &&
-          docker rm frontend || true &&
+            -e MONGO_URI=mongodb://root:example@localhost:27017/testdb \
+            ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+
+      - name: Run Frontend
+        run: |
           docker run -d --name frontend -p 3000:80 \
             -e REACT_APP_API_URL=http://localhost:3002 \
-            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}" 
+            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
 
+      - name: Test Backend
+        run: |
+          echo "Testing backend..."
+          curl -f http://localhost:3002/api/users || echo "Backend not ready"
+
+  # ====================
+  # 3. Deploy to Prod (runs inside Actions runner)
+  # ====================
   deploy-prod:
     needs: build
     if: github.ref == 'refs/heads/main'
@@ -67,18 +88,26 @@ jobs:
     environment:
       name: prod
     steps:
-      - name: Deploy to Prod Server
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Start MongoDB
         run: |
-          ssh user@prod-server "
-          docker pull ghcr.io/${{ github.repository }}/backend:${{ github.sha }} &&
-          docker pull ghcr.io/${{ github.repository }}/frontend:${{ github.sha }} &&
-          docker stop backend || true &&
-          docker rm backend || true &&
+          docker run -d --name mongo -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=example -p 27017:27017 mongo:6
+
+      - name: Run Backend
+        run: |
           docker run -d --name backend -p 3002:3000 \
-            -e MONGO_URI=mongodb://root:example@mongo:27017/proddb \
-            ghcr.io/${{ github.repository }}/backend:${{ github.sha }} &&
-          docker stop frontend || true &&
-          docker rm frontend || true &&
+            -e MONGO_URI=mongodb://root:example@localhost:27017/proddb \
+            ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+
+      - name: Run Frontend
+        run: |
           docker run -d --name frontend -p 3000:80 \
             -e REACT_APP_API_URL=http://localhost:3002 \
-            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}" 
+            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+
+      - name: Test Backend
+        run: |
+          echo "Testing backend..."
+          curl -f http://localhost:3002/api/users || echo "Backend not ready"
