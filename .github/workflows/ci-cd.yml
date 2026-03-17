@@ -45,7 +45,7 @@ jobs:
             ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
 
   # ====================
-  # 2. Deploy to Dev (runs inside Actions runner)
+  # 2. Deploy to Dev (inside Actions runner)
   # ====================
   deploy-dev:
     needs: build
@@ -56,6 +56,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT_GHCR }}
 
       - name: Start MongoDB
         run: |
@@ -79,7 +86,7 @@ jobs:
           curl -f http://localhost:3002/api/users || echo "Backend not ready"
 
   # ====================
-  # 3. Deploy to Prod (runs inside Actions runner)
+  # 3. Deploy to Prod (inside Actions runner)
   # ====================
   deploy-prod:
     needs: build
@@ -90,6 +97,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT_GHCR }}
 
       - name: Start MongoDB
         run: |
