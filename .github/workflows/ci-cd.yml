@@ -74,7 +74,7 @@ jobs:
 
           username: ${{ github.actor }}
 
-          password: ${{ github.token }}
+          password: ${{ secrets.PAT_GHCR }}
 
 
 
