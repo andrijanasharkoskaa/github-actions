@@ -1,32 +1,61 @@
 version: "3.8"
 
 services:
+
   backend:
-    build: ./backend
+
+    image: ghcr.io/andrijanasharkoskaa/github-actions/backend:${TAG:-latest}
+
     ports:
-      - "3002:3000" # map container 3000 to local 3002
+
+      - "3002:3000"
+
     environment:
-      - MONGO_URI=mongodb://mongo:27017/testdb
+
+      MONGO_URI: mongodb://mongo:27017/testdb
+
     depends_on:
+
       - mongo
 
+
+
   frontend:
-    build: ./frontend
+
+    image: ghcr.io/andrijanasharkoskaa/github-actions/frontend:${TAG:-latest}
+
     ports:
-      - "3000:80" # map container 80 to local 3000
+
+      - "3000:80"
+
     depends_on:
+
       - backend
 
+
+
   mongo:
+
     image: mongo:6
+
     container_name: mongo
+
     ports:
+
       - "27017:27017"
+
     environment:
+
       MONGO_INITDB_ROOT_USERNAME: root
+
       MONGO_INITDB_ROOT_PASSWORD: example
+
     volumes:
+
       - mongo-data:/data/db
 
+
+
 volumes:
+
   mongo-data:
