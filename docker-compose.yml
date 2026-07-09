@@ -1,58 +1,54 @@
-version: "3.8"
-
 services:
 
   backend:
-
     image: ghcr.io/andrijanasharkoskaa/github-actions/backend:${TAG:-latest}
 
-    ports:
+    container_name: backend
 
+    ports:
       - "3002:3000"
 
     environment:
-
       MONGO_URI: mongodb://mongo:27017/testdb
 
     depends_on:
-
       - mongo
+
+    restart: always
 
 
 
   frontend:
-
     image: ghcr.io/andrijanasharkoskaa/github-actions/frontend:${TAG:-latest}
 
-    ports:
+    container_name: frontend
 
+    ports:
       - "3000:80"
 
     depends_on:
-
       - backend
+
+    restart: always
 
 
 
   mongo:
-
     image: mongo:6
 
     container_name: mongo
 
     ports:
-
       - "27017:27017"
 
     environment:
-
       MONGO_INITDB_ROOT_USERNAME: root
-
       MONGO_INITDB_ROOT_PASSWORD: example
 
     volumes:
-
       - mongo-data:/data/db
+
+    restart: always
 
 
 
