@@ -21,6 +21,18 @@ permissions:
 
   packages: write
 
+  id-token: write
+
+
+
+env:
+
+  REGISTRY: ghcr.io
+
+  IMAGE_NAME: ${{ github.repository }}
+
+  DOCKER_BUILDKIT: 1
+
 
 
 jobs:
@@ -35,7 +47,6 @@ jobs:
 
 
     runs-on: ubuntu-latest
-
 
 
     steps:
@@ -59,11 +70,19 @@ jobs:
 
         with:
 
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
 
           username: ${{ github.actor }}
 
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ github.token }}
+
+
+
+      - name: Verify GHCR login
+
+        run: |
+
+          docker info
 
 
 
@@ -100,6 +119,7 @@ jobs:
             ghcr.io/${{ github.repository }}/frontend:latest
 
             ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+
 
 
 
@@ -147,7 +167,13 @@ jobs:
 
           username: ${{ github.actor }}
 
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ github.token }}
+
+
+
+      - name: Validate docker compose
+
+        run: docker compose config
 
 
 
@@ -166,6 +192,7 @@ jobs:
       - name: Verify containers
 
         run: docker ps
+
 
 
 
@@ -213,7 +240,13 @@ jobs:
 
           username: ${{ github.actor }}
 
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ github.token }}
+
+
+
+      - name: Validate docker compose
+
+        run: docker compose config
 
 
 
